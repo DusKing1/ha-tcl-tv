@@ -33,7 +33,6 @@ const CARD_STYLE = `
   .app { min-width:0; height:77px; padding:8px 3px 5px; border-radius:18px; border:1px solid rgba(255,255,255,.5); color:var(--ink); background:var(--glass);
     backdrop-filter:blur(20px) saturate(1.25); -webkit-backdrop-filter:blur(20px) saturate(1.25);
     box-shadow:inset 0 1px 1px rgba(255,255,255,.85),0 3px 7px rgba(65,67,91,.04); transition:background .15s,box-shadow .15s,transform .15s; }
-  .app.selected { background:rgba(255,255,255,.82); border-color:white; box-shadow:0 4px 12px rgba(112,96,150,.17),inset 0 0 0 1px rgba(163,148,193,.23); transform:translateY(-1px); }
   .app:active { transform:scale(.95); }
   .app-icon { display:grid; place-items:center; width:33px; height:33px; margin:0 auto 6px; border-radius:11px; background:var(--icon-bg); color:var(--icon-fg); font-size:14px; font-weight:700; letter-spacing:-.4px; box-shadow:inset 0 1px 1px rgba(255,255,255,.8); }
   .app-label { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:10px; font-weight:550; line-height:15px; }
@@ -82,7 +81,6 @@ const CARD_STYLE = `
   :host([dark]) .shell:after { border-color:#ffffff09; }
   :host([dark]) .tab[aria-pressed=true] { background:rgba(255,255,255,.13); box-shadow:0 3px 9px #2222,inset 0 1px 1px #fff3; }
   :host([dark]) .app { border-color:#fff2; box-shadow:inset 0 1px 1px #fff2,0 3px 7px #0001; }
-  :host([dark]) .app.selected { background:#ffffff29; border-color:#fff6; box-shadow:inset 0 1px 1px #fff4,0 4px 12px #16102033; }
   :host([dark]) .tabs { border-color:#fff2; background:#ffffff08; }
   :host([dark]) .dot { background:#a99ebb55; } :host([dark]) .dot.active { background:#c1b3d6; }
   :host([dark]) .feedback.error { color:#ffb5bd; }
@@ -123,8 +121,8 @@ class TclIpodCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode:"open"});
-    this._screen = "apps";
-    this._selected = 0;
+    this._screen = "remote";
+    this._appPage = 0;
     this._busy = false;
     this._dial = null;
     this._signature = "";
@@ -164,12 +162,12 @@ class TclIpodCard extends HTMLElement {
     if (this.shadowRoot.querySelector(".shell")) return;
     this.shadowRoot.innerHTML = `<style>${CARD_STYLE}</style><div class="shell" role="group" aria-label="电视遥控器">
       <div class="screen-frame"><div class="screen"><div class="status"></div><nav class="tabs" aria-label="遥控器页面"></nav><div class="screen-content"></div><p class="feedback" role="status"></p></div></div>
-      <div class="wheel-wrap"><div class="wheel" tabindex="0" role="group" aria-label="点击环">
+      <div class="wheel-wrap"><div class="wheel" tabindex="0" role="group" aria-label="电视方向与确认" title="始终控制电视方向与确认">
         <button class="wheel-key wheel-up" data-action="up" aria-label="上">${icon("up")}</button>
         <button class="wheel-key wheel-left" data-action="left" aria-label="左">${icon("left")}</button>
         <button class="wheel-key wheel-right" data-action="right" aria-label="右">${icon("right")}</button>
         <button class="wheel-key wheel-down" data-action="down" aria-label="下">${icon("down")}</button>
-        <button class="wheel-center" data-action="ok" aria-label="选择">${icon("check")}</button>
+        <button class="wheel-center" data-action="ok" aria-label="电视确认">${icon("check")}</button>
       </div>
       <div class="transport"><button data-action="local-menu" aria-label="遥控页面" title="遥控页面">${icon("remote")}</button><button data-key="back" aria-label="电视返回" title="返回">${icon("back")}</button><button data-key="playback" aria-label="电视播放暂停" title="播放 / 暂停">${icon("playback")}</button><button data-key="source" aria-label="电视信号源" title="信号源">${icon("source")}</button></div></div>
     </div>`;
@@ -232,13 +230,14 @@ class TclIpodCard extends HTMLElement {
     const disabled = this._online() ? "" : "disabled";
     if (this._screen === "apps") {
       const apps = this._apps();
-      this._selected = Math.max(0,Math.min(this._selected,apps.length-1));
-      const page = Math.floor(this._selected/PAGE_SIZE), pages = Math.ceil(apps.length/PAGE_SIZE);
+      const pages = Math.ceil(apps.length/PAGE_SIZE);
+      this._appPage = Math.max(0,Math.min(this._appPage,pages-1));
+      const page = this._appPage;
       const start = page*PAGE_SIZE;
       const tiles = apps.slice(start,start+PAGE_SIZE).map((name,i) => {
         const index = start+i, [bg,fg] = PALETTE[index%PALETTE.length];
         const monogram = /^[a-z]/i.test(name) ? name.slice(0,2).toUpperCase() : Array.from(name)[0];
-        return `<button class="app ${index===this._selected?"selected":""}" data-app="${index}" aria-label="打开 ${esc(name)}" title="${esc(name)}" ${disabled}>
+        return `<button class="app" data-app="${index}" data-source="${esc(name)}" aria-label="打开 ${esc(name)}" title="${esc(name)}" ${disabled}>
           <span class="app-icon" style="--icon-bg:${bg};--icon-fg:${fg}">${esc(monogram)}</span><span class="app-label">${esc(name)}</span></button>`;
       }).join("");
       content = `<div class="section-title"><h2>打开点什么</h2><span class="count">${apps.length} 个应用</span></div>`;
@@ -274,14 +273,11 @@ class TclIpodCard extends HTMLElement {
     if (button.closest(".wheel") && performance.now() < (this._suppressClick ?? 0)) return;
     const data = button.dataset;
     if (data.tab) return this._navigate(data.tab);
-    if (data.app !== undefined) {
-      this._selected = Number(data.app);
-      this._render(true);
-      return this._launch();
-    }
+    // Only explicit app tiles launch apps. The TV pad never selects an app.
+    if (data.app !== undefined) return this._launchApp(data.source);
     if (data.page) {
-      const page = Math.floor(this._selected/PAGE_SIZE)+Number(data.page);
-      this._selected = Math.max(0,Math.min(this._apps().length-1,page*PAGE_SIZE));
+      const lastPage = Math.max(0,Math.ceil(this._apps().length/PAGE_SIZE)-1);
+      this._appPage = Math.max(0,Math.min(lastPage,this._appPage+Number(data.page)));
       return this._render(true);
     }
     if (data.volume) return this._volume(Number(data.volume));
@@ -291,30 +287,12 @@ class TclIpodCard extends HTMLElement {
       if (!this._player() || !this._remote()) return this._message("请检查卡片的实体配置",true);
       return this._call("media_player",this._player().state==="on"?"turn_off":"turn_on",{},this._player().state==="on"?"已发送关机按键":"已发送唤醒包，等待电视连接");
     }
-    this._direction(data.action);
+    if (data.action) this._sendKey(data.action);
   }
 
-  _direction(key) {
-    if (this._screen === "remote") return this._sendKey(key);
-    if (this._screen === "volume") {
-      if (key==="up" || key==="right") return this._volume(1);
-      if (key==="down" || key==="left") return this._volume(-1);
-      return;
-    }
-    if (key==="ok") return this._launch();
-    const step = ({up:-3,down:3,left:-1,right:1})[key];
-    if (step) this._moveSelection(step);
-  }
-
-  _moveSelection(step) {
-    this._selected = Math.max(0,Math.min(this._apps().length-1,this._selected+step));
-    this._render(true);
-  }
 
   _rotate(step) {
-    if (this._screen === "apps") this._moveSelection(step);
-    else if (this._screen === "volume") this._volume(step);
-    else this._sendKey(step>0?"down":"up");
+    this._sendKey(step>0?"down":"up");
   }
 
   _key(event) {
@@ -326,11 +304,10 @@ class TclIpodCard extends HTMLElement {
     // Let native Enter activate a focused button once, never also send OK.
     if (event.key==="Enter" && event.target.closest("button")) return;
     event.preventDefault();
-    this._direction(key);
+    this._sendKey(key);
   }
 
-  _launch() {
-    const source = this._apps()[this._selected];
+  _launchApp(source) {
     if (source) this._call("media_player","select_source",{source},`已发送打开「${source}」`);
   }
   _volume(step) { this._call("media_player",step>0?"volume_up":"volume_down"); }
