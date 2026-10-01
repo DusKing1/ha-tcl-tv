@@ -1,10 +1,10 @@
 {
   "domain": "tcl_tv",
   "name": "TCL TV LAN Remote",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "codeowners": ["@DusKing1"],
   "config_flow": true,
-  "dependencies": ["frontend", "http"],
+  "dependencies": ["frontend", "http", "lovelace"],
   "documentation": "https://github.com/DusKing1/ha-tcl-tv",
   "issue_tracker": "https://github.com/DusKing1/ha-tcl-tv/issues",
   "integration_type": "device",

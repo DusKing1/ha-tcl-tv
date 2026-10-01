@@ -48,7 +48,7 @@ data:
 
 ## TCL Glass Remote 卡片
 
-集成通过 Home Assistant 前端额外 JavaScript 自动加载卡片，**通常不需要手动添加 Lovelace 资源**。安装并重启后，向仪表盘添加手动卡片：
+集成自动在 **Lovelace 仪表盘资源表**中注册和更新卡片模块，**storage 资源模式无需手工添加**。不再仅依赖首页 HTML 的额外 JavaScript 导入。安装并重启后，向仪表盘添加手动卡片：
 
 ```yaml
 type: custom:tcl-ipod-card
@@ -57,6 +57,18 @@ remote: remote.your_tcl_tv
 ```
 
 为兼容已有配置，卡片类型仍叫 `custom:tcl-ipod-card`；公开名称为 **TCL Glass Remote**，不是 iPod 外观复刻。
+
+若自行使用 `lovelace.resource_mode: yaml` 管理资源，在资源配置中加入以下条目，并随版本更新 URL（集成不会改写你的 YAML）：
+
+```yaml
+lovelace:
+  resource_mode: yaml
+  resources:
+    - url: /tcl_tv_static/tcl-ipod-card.js?v=0.3.2
+      type: module
+```
+
+如果某个客户端显示“配置错误”，先展开查看原始错误。`Custom element doesn't exist: tcl-ipod-card` 表示模块没加载，不是电视离线；升级后重开页面以重新读取资源表。不要仅凭另一浏览器正常就认定所有 Android WebView 已通过验证。
 
 卡片整体采用 Liquid Glass 质感：全玻璃面板、圆形方向键布局、磨砂应用图块，并提供三个分段页面：
 
@@ -77,6 +89,13 @@ remote: remote.your_tcl_tv
 文档区分手机应用静态行为、既有离线验证与上述实机结果。它公开研究所得协议事实，不附带 APK、原生库或反编译源码。投屏、语音、应用安装/卸载、账号、清理、AV 协商等协议目录条目**不表示本 HA 集成实现或验证了这些功能**。不支持其他协议电视的自动适配，也不承诺前台应用、屏幕状态、任意浏览器 URL 打开或精确 HDMI 切换。
 
 ## 更新记录
+
+### 0.3.2
+
+- 卡片加载从仅首页 `extra_module_url` 改为 Lovelace 资源表：storage 模式自动创建、更新版本并去重；YAML 模式给出明确配置路径，不改写用户 YAML。
+- 在实际 HA 页面用不含 TCL 启动导入的同源 HTML 重现“Custom element doesn't exist”，注册资源后同一加载条件恢复。
+- 验证了现代 Chromium 的 Android UA、触摸和标准/缺失启动导入路径；未连接用户出错的 Android 设备，不将模拟视为实机验收。
+
 
 ### 0.3.1
 
