@@ -7,17 +7,19 @@ from homeassistant.components import frontend
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN, PLATFORMS
 from .hub import TclTvHub
 
 type TclTvConfigEntry = ConfigEntry[TclTvHub]
-CARD_URL = "/tcl_tv_static/tcl-ipod-card.js?v=0.2.2"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Serve and load the bundled iPod-style Lovelace card."""
+    """Serve and load the bundled Liquid Glass remote card."""
     component_dir = Path(__file__).parent
+    integration = await async_get_integration(hass, DOMAIN)
+    card_url = f"/tcl_tv_static/tcl-ipod-card.js?v={integration.version}"
     await hass.http.async_register_static_paths(
         [
             StaticPathConfig(
@@ -27,7 +29,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             )
         ]
     )
-    frontend.add_extra_js_url(hass, CARD_URL)
+    frontend.add_extra_js_url(hass, card_url)
     return True
 
 
