@@ -1,0 +1,12 @@
+{
+  "domain": "tcl_tv",
+  "name": "TCL TV LAN Remote",
+  "version": "0.2.0",
+  "codeowners": ["@DusKing1"],
+  "config_flow": true,
+  "documentation": "https://github.com/DusKing1/ha-tcl-tv",
+  "issue_tracker": "https://github.com/DusKing1/ha-tcl-tv/issues",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "requirements": []
+}

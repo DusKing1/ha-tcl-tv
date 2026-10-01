@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TCL TV",
+        "description": "The TV must be on and reachable (UDP 6537 / TCP 6553).",
+        "data": {
+          "host": "IP address"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No TCL remote service answered at this address. Is the TV on?"
+    },
+    "abort": {
+      "already_configured": "This TV is already configured."
+    }
+  }
+}

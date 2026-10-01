@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TCL 电视",
+        "description": "添加时电视必须开着，且能访问 UDP 6537 / TCP 6553。",
+        "data": {
+          "host": "IP 地址"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "这个地址上没有 TCL 遥控服务应答。电视开着吗？"
+    },
+    "abort": {
+      "already_configured": "这台电视已经添加过了。"
+    }
+  }
+}
