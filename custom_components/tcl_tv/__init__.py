@@ -12,7 +12,7 @@ from .const import DOMAIN, PLATFORMS
 from .hub import TclTvHub
 
 type TclTvConfigEntry = ConfigEntry[TclTvHub]
-CARD_URL = "/tcl_tv_static/tcl-ipod-card.js?v=0.2.0"
+CARD_URL = "/tcl_tv_static/tcl-ipod-card.js?v=0.2.2"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:

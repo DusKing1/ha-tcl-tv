@@ -46,8 +46,11 @@ class TclIpodCard extends HTMLElement {
     this._selected = 0;
     this._appOffset = 0;
     this._signature = "";
-    this.tabIndex = 0;
     this.addEventListener("keydown", this._onKeyDown);
+  }
+
+  connectedCallback() {
+    this.tabIndex = 0;
   }
 
   setConfig(config) {
@@ -68,6 +71,7 @@ class TclIpodCard extends HTMLElement {
     if (!force && signature === this._signature) return;
     this._signature = signature;
     const isOn = player?.state === "on";
+    const volume = player?.attributes?.volume_level;
     const volumePct = volume != null && Number.isFinite(Number(volume)) ? Math.max(0, Math.min(100, Math.round(Number(volume) * 100))) : null;
     const menu = this._screen === "menu" ? MENU : this._screen === "apps" ? this._apps().map((label) => ({ label, icon: "▸" })) : [];
     const items = this._visibleItems(menu);

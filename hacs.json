@@ -1,3 +1,5 @@
 {
-  "name": "TCL TV LAN Remote"
+  "name": "TCL TV LAN Remote",
+  "domains": ["tcl_tv"],
+  "render_readme": true
 }
